@@ -14,8 +14,23 @@
     }
 
     body{
-      background:#f4f4f4;
       color:#222;
+
+      /* animované pozadí */
+      background: 
+        linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
+        url("https://ceskehory.goldengate.cz/wp-content/uploads/2024/04/Jelen-evropske.jpg");
+
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+
+      animation: bgZoom 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgZoom{
+      0%{ background-size: 100%; }
+      100%{ background-size: 110%; }
     }
 
     /* HORNÍ PRUH */
@@ -76,14 +91,25 @@
     .right-side{
       width:50%;
       padding:50px 30px;
+      color:white;
+      animation: fadeIn 1.5s ease;
+    }
+
+    @keyframes fadeIn{
+      from{ opacity:0; transform: translateY(20px); }
+      to{ opacity:1; transform: translateY(0); }
     }
 
     .left-side{
-      background:#dfe9dc;
+      background:
+        linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+        url("https://media.istockphoto.com/id/182199370/photo/young-hart-red-deer-stag-cervus-elaphus-profile.jpg?s=170667a&w=0&k=20&c=G4nxM2tFa_Hmzwqrtc7NgE0-GoukxmA5em7zBVj59To=");
+      background-size: cover;
+      background-position: center;
     }
 
     .right-side{
-      background:#ffffff;
+      background: rgba(0,0,0,0.35);
     }
 
     h2{
@@ -96,11 +122,11 @@
       line-height:1.6;
     }
 
-    /* LINKA + TLAČÍTKO */
+    /* SPODNÍ ČÁST */
     .bottom{
       width:100%;
       padding:30px;
-      background:#e8e8e8;
+      background:rgba(0,0,0,0.5);
       text-align:center;
       border-top:3px solid #1f4d2e;
     }
@@ -118,6 +144,7 @@
 
     .btn:hover{
       background:#163821;
+      transform: scale(1.05);
     }
 
     /* MOBIL */
@@ -161,7 +188,6 @@
 
 <body>
 
-  <!-- HORNÍ PRUH -->
   <header>
 
     <div class="logo">
@@ -184,12 +210,10 @@
 
   </header>
 
-  <!-- HLAVNÍ ČÁST -->
   <section class="main">
 
     <div class="left-side">
       <h2>Bodování jelenů</h2>
-
       <p>
         Přehled bodování jelenů, statistiky,
         trofeje a hodnocení zvěře.
@@ -198,7 +222,6 @@
 
     <div class="right-side">
       <h2>Databáze</h2>
-
       <p>
         Evidence zvěře, informace o úlovcích,
         fotografie a další údaje.
@@ -207,13 +230,8 @@
 
   </section>
 
-  <!-- SPODEK -->
   <section class="bottom">
-
-    <button class="btn">
-      Přidat
-    </button>
-
+    <button class="btn">Přidat</button>
   </section>
 
 </body>
