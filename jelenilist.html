@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas a Databáze Jelenovitých</title>
+    <!-- Tailwind CSS pro moderní design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts pro luxusní lesní typografii -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f6f0;
+        }
+        h1, h2, h3, h4, .serif-font {
+            font-family: 'Cinzel', serif;
+        }
+    </style>
+</head>
+<body class="text-stone-800 min-h-screen flex flex-col">
+
+    <!-- Horní lišta / Oznámení o stavu JSON -->
+    <div id="status-bar" class="bg-amber-100 border-b border-amber-200 py-2 px-4 text-xs md:text-sm text-amber-900 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <span class="flex items-center gap-2">
+                <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span id="status-text">Zkouším navázat spojení se souborem 'jeleni.json'...</span>
+            </span>
+            <div class="flex gap-3">
+                <button onclick="downloadJSON()" class="underline font-semibold hover:text-amber-950">Stáhnout aktuální jeleni.json</button>
+                <span class="text-amber-300">|</span>
+                <label for="file-upload" class="underline font-semibold cursor-pointer hover:text-amber-950">
+                    Nahrát vlastní JSON
+                    <input type="file" id="file-upload" class="hidden" accept=".json" onchange="handleFileSelect(event)">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigační menu -->
+    <nav class="bg-stone-900 text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
+            <!-- Logo / Název -->
+            <button onclick="navigateTo('list')" class="flex items-center gap-2 text-left group">
+                <span class="text-emerald-500 text-2xl">🦌</span>
+                <div>
+                    <span class="block font-bold text-sm md:text-base tracking-wider serif-font text-stone-100 group-hover:text-emerald-400 transition-colors">ATLAS JELENŮ</span>
+                    <span class="block text-[10px] text-stone-400 uppercase tracking-widest -mt-1">Cervidae Database</span>
+                </div>
+            </button>
+
+            <!-- Odkazy -->
+            <div class="flex items-center gap-2 md:gap-4">
+                <button id="nav-btn-list" onclick="navigateTo('list')" class="px-3 py-2 rounded-lg text-sm font-semibold transition-all bg-emerald-800 text-white">
+                    📚 Seznam jelenů
+                </button>
+                <button id="nav-btn-add" onclick="navigateTo('add')" class="px-3 py-2 rounded-lg text-sm font-semibold transition-all text-stone-300 hover:text-white hover:bg-stone-800">
+                    ➕ Přidat nového
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Header (zobrazuje se hlavně na úvodní stránce seznamu) -->
+    <header id="hero-header" class="relative bg-stone-900 text-white py-12 px-6 overflow-hidden shadow-xl transition-all duration-300">
+        <div class="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay" style="background-image: url('https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=1600&auto=format&fit=crop&q=80');"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent"></div>
+        <div class="relative max-w-6xl mx-auto text-center">
+            <span class="text-emerald-400 font-semibold tracking-widest text-xs uppercase bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/40 inline-block mb-3">Encyklopedie divoké přírody</span>
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2 serif-font text-stone-100">Digitální Atlas Jelenovitých</h1>
+            <p class="text-stone-300 max-w-xl mx-auto text-xs md:text-sm leading-relaxed">
+                Prozkoumej úžasný svět jelenovitých savců. Můžeš přidávat nové druhy, upravovat jejich fotografie a spravovat celou databázi.
+            </p>
+        </div>
+    </header>
+
+    <!-- Hlavní obsah -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 md:px-8 py-8 w-full">
+
+        <!-- ================= STRÁNKA 1: SEZNAM JELENŮ ================= -->
+        <section id="page-list" class="page-view space-y-8">
+            <!-- Vyhledávání a Filtry -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/80">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Hledat -->
+                    <div class="md:col-span-2 relative">
+                        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Vyhledat druh</label>
+                        <div class="relative">
+                            <input type="text" id="search-input" oninput="applyFilters()" placeholder="Zadejte název (např. Jelen lesní)..." class="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm">
+                            <svg class="w-5 h-5 text-stone-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+
+                    <!-- Filtr: Podčeleď -->
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Zařazení (Podčeleď)</label>
+                        <select id="subfamily-filter" onchange="applyFilters()" class="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm cursor-pointer">
+                            <option value="all">Všechny skupiny</option>
+                            <option value="Jeleni (Cervinae)">Jeleni (Cervinae)</option>
+                            <option value="Srnci (Capreolinae)">Srnci (Capreolinae)</option>
+                        </select>
+                    </div>
+
+                    <!-- Seřazení -->
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Seřadit podle</label>
+                        <select id="sort-select" onchange="applyFilters()" class="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm cursor-pointer">
+                            <option value="default">Výchozí pořadí</option>
+                            <option value="name-asc">Abecedně (A - Z)</option>
+                            <option value="name-desc">Abecedně (Z - A)</option>
+                            <option value="weight-desc">Nejtěžší druhy</option>
+                            <option value="weight-asc">Nejlehčí druhy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Rychlé statistiky -->
+                <div class="flex flex-wrap items-center justify-between border-t border-stone-100 mt-6 pt-4 text-xs text-stone-500 gap-2">
+                    <div>
+                        Zobrazeno: <span id="counter-visible" class="font-bold text-emerald-700">0</span> z celkem <span id="counter-total" class="font-bold">0</span> druhů.
+                    </div>
+                    <button onclick="resetFilters()" class="text-stone-500 hover:text-emerald-700 transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H17"></path></svg>
+                        Resetovat filtry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Seznam/Grid jelenů -->
+            <div id="deer-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamicky doplňováno pomocí JS -->
+            </div>
+
+            <!-- Prázdný stav při nenalezení -->
+            <div id="empty-state" class="hidden text-center py-16 bg-white rounded-2xl border border-stone-200/60 shadow-sm">
+                <svg class="w-16 h-16 text-stone-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <h3 class="text-lg font-semibold text-stone-700 mb-1">Žádní jeleni neodpovídají filtrům</h3>
+                <p class="text-stone-500 text-sm max-w-md mx-auto">Zkuste prosím upravit své vyhledávání nebo změnit nastavené filtry.</p>
+            </div>
+        </section>
+
+
+        <!-- ================= STRÁNKA 2: PŘIDAT NOVÉHO JELENA ================= -->
+        <section id="page-add" class="page-view hidden max-w-3xl mx-auto">
+            <div class="bg-white rounded-2xl p-6 md:p-8 shadow-md border border-stone-200/80">
+                <div class="border-b border-stone-100 pb-4 mb-6">
+                    <h2 class="text-2xl font-bold text-stone-900 serif-font">➕ Přidat nového jelenovitého</h2>
+                    <p class="text-stone-500 text-sm mt-1">Zadej informace o novém druhu k uložení do databáze.</p>
+                </div>
+
+                <form id="add-deer-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+                    <!-- Základní informace -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Český název *</label>
+                            <input type="text" id="add-name" required placeholder="Např. Jelen milu" class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Latinský název *</label>
+                            <input type="text" id="add-latin" required placeholder="Např. Elaphurus davidianus" class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm italic">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Zařazení (Podčeleď) *</label>
+                            <select id="add-subfamily" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm cursor-pointer">
+                                <option value="Jeleni (Cervinae)">Jeleni (Cervinae)</option>
+                                <option value="Srnci (Capreolinae)">Srnci (Capreolinae)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Status ohrožení (IUCN) *</label>
+                            <select id="add-status" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm cursor-pointer">
+                                <option value="Málo dotčený (LC)">Málo dotčený (LC)</option>
+                                <option value="Téměř ohrožený (NT)">Téměř ohrožený (NT)</option>
+                                <option value="Zranitelný (VU)">Zranitelný (VU)</option>
+                                <option value="Ohrožený (EN)">Ohrožený (EN)</option>
+                                <option value="Kriticky ohrožený (CR)">Kriticky ohrožený (CR)</option>
+                                <option value="V přírodě vyhubený (EW)">V přírodě vyhubený (EW)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Fyzické parametry -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200/50">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Hmotnost minimální (kg)</label>
+                            <input type="number" id="add-weight-min" min="1" placeholder="Např. 130" class="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Hmotnost maximální (kg) *</label>
+                            <input type="number" id="add-weight-max" required min="1" placeholder="Např. 200" class="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Výška v kohoutku (cm)</label>
+                            <input type="number" id="add-height" min="1" placeholder="Např. 120" class="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Foto nahrávání -->
+                    <div>
+                        <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Fotografie jelena</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                            <!-- Možnost 1: Nahrát soubor -->
+                            <div class="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-emerald-500 transition-colors cursor-pointer relative">
+                                <input type="file" id="add-photo-file" accept="image/*" onchange="previewNewDeerPhoto(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                <span class="text-xs font-semibold text-emerald-800">📁 Vybrat fotku z počítače</span>
+                                <p class="text-[10px] text-stone-400 mt-1">Podporuje JPG, PNG, WEBP</p>
+                            </div>
+                            <!-- Možnost 2: URL adresa -->
+                            <div>
+                                <input type="url" id="add-photo-url" oninput="previewUrlPhoto(this.value)" placeholder="Nebo vložte URL adresu obrázku..." class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 text-xs">
+                            </div>
+                        </div>
+                        <!-- Náhled nahrávaného obrázku -->
+                        <div id="add-photo-preview-container" class="hidden mt-4 relative w-full h-40 rounded-xl overflow-hidden border border-stone-200">
+                            <img id="add-photo-preview" src="" alt="Náhled" class="w-full h-full object-cover">
+                            <button type="button" onclick="removePreviewPhoto()" class="absolute top-2 right-2 bg-black/70 hover:bg-black text-white text-xs px-2.5 py-1 rounded-lg">Zrušit fotku</button>
+                        </div>
+                    </div>
+
+                    <!-- Detaily o životě -->
+                    <div>
+                        <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Geografický výskyt *</label>
+                        <input type="text" id="add-habitat" required placeholder="Např. Východní Čína, obory v Evropě..." class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Složení potravy</label>
+                            <input type="text" id="add-diet" placeholder="Např. Vodní rostliny, tráva..." class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Aktivita během dne</label>
+                            <input type="text" id="add-activity" placeholder="Např. Celodenní, hlavně za soumraku..." class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Hlavní popis druhu *</label>
+                        <textarea id="add-desc" required rows="4" placeholder="Napište zajímavosti, chování, vzhled a historii tohoto druhu..." class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-all text-sm"></textarea>
+                    </div>
+
+                    <!-- Tlačítka -->
+                    <div class="flex gap-4 pt-4 border-t border-stone-100">
+                        <button type="button" onclick="navigateTo('list')" class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-3 px-4 rounded-xl transition-all text-sm">
+                            Zrušit
+                        </button>
+                        <button type="submit" class="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all text-sm">
+                            💾 Uložit do databáze
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+
+        <!-- ================= STRÁNKA 3: DETAIL PODSTRÁNKA JELENA ================= -->
+        <section id="page-detail" class="page-view hidden max-w-4xl mx-auto space-y-6">
+            <!-- Tlačítko zpět -->
+            <button onclick="navigateTo('list')" class="inline-flex items-center gap-2 text-stone-600 hover:text-emerald-800 transition-colors font-semibold text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Zpět na seznam všech jelenů
+            </button>
+
+            <!-- Karta detailu -->
+            <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-stone-200/80">
+                <!-- Vrchní velký obrázek -->
+                <div class="relative h-64 md:h-[400px] bg-stone-900">
+                    <img id="detail-image" src="" alt="Jelen" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent"></div>
+                    
+                    <!-- Rychlá změna fotografie přímo z detailu -->
+                    <div class="absolute top-4 right-4 flex gap-2">
+                        <label class="bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white text-xs font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-1">
+                            📷 Změnit fotku
+                            <input type="file" accept="image/*" onchange="changeDetailPhoto(event)" class="hidden">
+                        </label>
+                    </div>
+
+                    <div class="absolute bottom-6 left-6 right-6 text-white">
+                        <span id="detail-subfamily" class="text-emerald-400 text-xs md:text-sm font-semibold uppercase tracking-wider bg-emerald-950/50 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-800/40"></span>
+                        <h2 id="detail-name" class="text-3xl md:text-5xl font-bold mt-3 serif-font"></h2>
+                        <p id="detail-latin" class="text-stone-300 italic text-sm md:text-lg mt-1"></p>
+                    </div>
+                </div>
+
+                <!-- Obsah podstránky -->
+                <div class="p-6 md:p-8 space-y-8">
+                    <!-- Rychlá fakta v mřížce -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 bg-stone-50 p-6 rounded-2xl border border-stone-200/50">
+                        <div>
+                            <span class="block text-xs text-stone-400 uppercase tracking-wider font-bold">Hmotnost druhu</span>
+                            <span id="detail-weight" class="text-stone-800 font-extrabold text-base md:text-lg"></span>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-stone-400 uppercase tracking-wider font-bold">Výška v kohoutku</span>
+                            <span id="detail-height" class="text-stone-800 font-extrabold text-base md:text-lg"></span>
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <span class="block text-xs text-stone-400 uppercase tracking-wider font-bold">Status ohrožení (IUCN)</span>
+                            <span id="detail-status" class="inline-block text-xs font-bold px-3 py-1.5 rounded-lg mt-1"></span>
+                        </div>
+                    </div>
+
+                    <!-- Popis -->
+                    <div class="space-y-3">
+                        <h3 class="text-xl font-bold text-stone-800 border-b border-stone-100 pb-2 flex items-center gap-2 serif-font">
+                            <span class="text-emerald-700">🌲</span> O tomto druhu
+                        </h3>
+                        <p id="detail-desc" class="text-stone-600 text-sm md:text-base leading-relaxed whitespace-pre-line"></p>
+                    </div>
+
+                    <!-- Detaily o životním prostředí -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div class="bg-stone-50/50 p-5 rounded-xl border border-stone-100 space-y-2">
+                            <h4 class="font-bold text-stone-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                                🗺️ Geografický výskyt
+                            </h4>
+                            <p id="detail-habitat" class="text-stone-600 text-sm leading-relaxed"></p>
+                        </div>
+                        <div class="bg-stone-50/50 p-5 rounded-xl border border-stone-100 space-y-2">
+                            <h4 class="font-bold text-stone-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                                🌾 Potrava a aktivita
+                            </h4>
+                            <p id="detail-diet" class="text-stone-600 text-sm leading-relaxed"></p>
+                            <p id="detail-activity" class="text-stone-500 text-xs italic pt-1"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spodní panel správy -->
+                <div class="bg-stone-50 px-6 py-4 border-t border-stone-100 flex flex-wrap items-center justify-between gap-4">
+                    <span class="text-xs text-stone-400">ID záznamu: <code id="detail-id" class="bg-stone-200/60 px-1.5 py-0.5 rounded text-stone-600"></code></span>
+                    <button onclick="deleteDeer()" class="text-xs text-red-600 hover:text-red-800 font-bold flex items-center gap-1 transition-colors">
+                        🗑️ Smazat jelena z databáze
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Import / Správa JSON sekce v patce -->
+    <section id="json-management-section" class="bg-stone-100 border-t border-stone-200 py-12 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-xl font-bold mb-3 text-center serif-font">Spravuj svá data přímo přes soubory</h2>
+            <p class="text-stone-600 text-xs md:text-sm text-center mb-8 max-w-xl mx-auto">
+                Když přidáš nové jeleny nebo změníš jejich fotky, stáhni si nový soubor <strong>jeleni.json</strong>. Při příští návštěvě ho sem stačí přetáhnout a tvoje práce se ihned načte.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Stáhnout karta -->
+                <div class="bg-white p-6 rounded-xl border border-stone-200 flex flex-col justify-between shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-base text-stone-800 mb-1">Exportovat databázi</h3>
+                        <p class="text-stone-500 text-xs leading-relaxed mb-4">Ulož si kompletní aktuální stav databáze (včetně nově přidaných jelenů a fotek) do souboru.</p>
+                    </div>
+                    <button onclick="downloadJSON()" class="w-full bg-stone-800 hover:bg-stone-900 text-white text-xs font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Uložit a stáhnout 'jeleni.json'
+                    </button>
+                </div>
+
+                <!-- Drop zóna pro upload -->
+                <div id="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="bg-white p-6 rounded-xl border-2 border-dashed border-stone-300 hover:border-emerald-600 transition-colors flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] shadow-sm">
+                    <svg class="w-8 h-8 text-stone-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <h3 class="font-semibold text-stone-800 text-xs mb-1">Přetáhnout 'jeleni.json' sem</h3>
+                    <p class="text-stone-400 text-[10px] mb-3">Klikni nebo sem přetáhni svůj upravený soubor</p>
+                    <label for="file-upload-2" class="text-[11px] bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                        Vybrat soubor
+                        <input type="file" id="file-upload-2" class="hidden" accept=".json" onchange="handleFileSelect(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-stone-950 text-stone-400 py-6 text-center text-[11px] border-t border-stone-900 mt-auto">
+        <p>© 2026 Atlas Jelenovitých. Bezpečný a čistý projekt pro výuku biologie.</p>
+    </footer>
+
+    <!-- TOAST (Vlastní elegantní upozornění) -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 pointer-events-none transition-all duration-300 bg-stone-900 text-white py-3 px-5 rounded-xl shadow-2xl flex items-center gap-3">
+        <span id="toast-icon" class="text-emerald-400"></span>
+        <span id="toast-message" class="text-xs font-semibold"></span>
+    </div>
+
+
+    <!-- ================= JAVASCRIPT LOGIKA APLIKACE ================= -->
+    <script>
+        // --- 1. VÝCHOZÍ / ZÁLOŽNÍ DATABÁZE ---
+        const defaultDeerData = [
+            {
+                "id": "jelen-lesni",
+                "jmeno": "Jelen lesní",
+                "latinsky": "Cervus elaphus",
+                "podceled": "Jeleni (Cervinae)",
+                "hmotnost_min": 160,
+                "hmotnost_max": 240,
+                "vyska_kohoutek": 150,
+                "vyskyt": "Evropa, Asie, Malá Asie, Kavkaz a části severní Afriky.",
+                "status": "Málo dotčený (LC)",
+                "popis": "Jelen lesní je jedním z největších zástupců své čeledi. Samci se pyšní mohutnými parohy, které každoročně koncem zimy shazují. Během podzimní říje se ozývají charakteristickým hlasitým troubením, kterým lákají samice a varují soky.",
+                "potrava": "Byliny, tráva, dřeviny, pupeny, lesní plody a kůra.",
+                "aktivita": "Převážně soumračná a noční zvířata.",
+                "obrazek": "https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800&auto=format&fit=crop&q=80"
+            },
+            {
+                "id": "srnec-obecny",
+                "jmeno": "Srnec obecný",
+                "latinsky": "Capreolus capreolus",
+                "podceled": "Srnci (Capreolinae)",
+                "hmotnost_min": 15,
+                "hmotnost_max": 35,
+                "vyska_kohoutek": 75,
+                "vyskyt": "Téměř celá Evropa kromě nejsevernějších oblastí, Malá Asie.",
+                "status": "Málo dotčený (LC)",
+                "popis": "Srnec obecný je nejhojnějším sudokopytníkem v české přírodě. Je poměrně malý, velmi hbitý a plachý. Má rezavohnědé letní zbarvení, které se na zimu mění v šedohnědé. Parůžky samců jsou krátké a obvykle mají tři výsady.",
+                "potrava": "Vysoce selektivní bylinožravec, vyhledává mladé lístky, pupeny a šťavnaté byliny.",
+                "aktivita": "Aktivní po celý den, ale nejvíce za svítání a soumraku.",
+                "obrazek": "https://images.unsplash.com/photo-1518259106641-4483465bb418?w=800&auto=format&fit=crop&q=80"
+            },
+            {
+                "id": "los-evropsky",
+                "jmeno": "Los evropský",
+                "latinsky": "Alces alces",
+                "podceled": "Srnci (Capreolinae)",
+                "hmotnost_min": 300,
+                "hmotnost_max": 500,
+                "vyska_kohoutek": 210,
+                "vyskyt": "Skandinávie, Pobaltí, Polsko, Rusko, občas migruje do ČR.",
+                "status": "Málo dotčený (LC)",
+                "popis": "Los je největší žijící jelenovitý savec na světě. Má masivní tělo, široký mulec s převislým horním pyskem, dlouhé nohy a u samců lopatovitě tvarované paroží. Skvěle plave a bez potíží překonává i velké vodní toky.",
+                "potrava": "Měkké dřeviny, vrby, břízy, vodní a bažinná vegetace.",
+                "aktivita": "Aktivní ve dne i v noci, s maximem za úsvitu.",
+                "obrazek": "https://images.unsplash.com/photo-1535083783855-76ae62b2914e?w=800&auto=format&fit=crop&q=80"
+            },
+            {
+                "id": "sob-polarni",
+                "jmeno": "Sob polární",
+                "latinsky": "Rangifer tarandus",
+                "podceled": "Srnci (Capreolinae)",
+                "hmotnost_min": 100,
+                "hmotnost_max": 250,
+                "vyska_kohoutek": 120,
+                "vyskyt": "Arktické a subarktické oblasti Severní Ameriky, Evropy a Asie.",
+                "status": "Zranitelný (VU)",
+                "popis": "Jedinečný druh jelenovitého, u kterého nosí paroží jak samci, tak samice. Jsou plně adaptováni na drsný život v tundře. Mají široká kopyta, která se v zimě roztáhnou, aby se nebořili do sněhu a mohli jím prohrabávat cestu k potravě.",
+                "potrava": "Lišejníky (zejména dutohlávka sobí), trávy, ostřice, listy bříz a vrb.",
+                "aktivita": "Aktivní v závislosti na světelných podmínkách polárního dne a noci.",
+                "obrazek": "https://images.unsplash.com/photo-1574345447178-5e7e00318efb?w=800&auto=format&fit=crop&q=80"
+            },
+            {
+                "id": "danek-evropsky",
+                "jmeno": "Daněk evropský",
+                "latinsky": "Dama dama",
+                "podceled": "Jeleni (Cervinae)",
+                "hmotnost_min": 45,
+                "hmotnost_max": 100,
+                "vyska_kohoutek": 95,
+                "vyskyt": "Původem z oblasti Středomoří a Malé Asie, vysazen v mnoha zemích Evropy.",
+                "status": "Málo dotčený (LC)",
+                "popis": "Daněk je středně velký jelenovitý s nápadným skvrnitým zbarvením (které si u mnoha jedinců uchovává i v dospělosti). Samci mají charakteristické široké lopatovité paroží. Bývá často chován v oborách a parcích pro svůj klidný charakter.",
+                "potrava": "Méně náročný spásač – trávy, bylinie, listí, semena stromů (žaludy, kaštany).",
+                "aktivita": "Aktivní převážně přes den.",
+                "obrazek": "https://images.unsplash.com/photo-1614030424754-24d1e991024b?w=800&auto=format&fit=crop&q=80"
+            }
+        ];
+
+        // Globální stavy aplikace
+        let activeDeerData = [];
+        let selectedDeerId = null;
+        let uploadedPhotoBase64 = "";
+
+        // Inicializace při načtení
+        window.onload = function() {
+            fetchDeerData();
+        }
+
+        // --- 2. ASYNCHRONNÍ NAČTENÍ NEBO ZÁLOHA ---
+        async function fetchDeerData() {
+            const statusBar = document.getElementById('status-bar');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            try {
+                const response = await fetch('jeleni.json');
+                if (!response.ok) throw new Error("Nelze nalézt soubor.");
+                const data = await response.json();
+                
+                activeDeerData = data;
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                statusText.innerText = "Data byla úspěšně načtena ze souboru 'jeleni.json'!";
+                statusBar.className = "bg-emerald-100 border-b border-emerald-200 py-2 px-4 text-xs md:text-sm text-emerald-950 transition-all duration-300";
+                showToast("Databáze úspěšně připravena!", "success");
+            } catch (error) {
+                console.warn("Spuštěno v offline/záložním režimu.", error);
+                activeDeerData = [...defaultDeerData];
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                statusText.innerHTML = `⚠️ <strong>Offline režim:</strong> Web běží na vestavěné paměti. Svá data si můžeš uložit stažením JSON souboru v patičce.`;
+                statusBar.className = "bg-amber-100 border-b border-amber-200 py-2 px-4 text-xs md:text-sm text-amber-900 transition-all duration-300";
+            }
+
+            initUI();
+        }
+
+        function initUI() {
+            document.getElementById('counter-total').innerText = activeDeerData.length;
+            applyFilters();
+            navigateTo('list');
+        }
+
+        // --- 3. NAVIGAČNÍ SYSTÉM (Multi-page simulace) ---
+        function navigateTo(page, deerId = null) {
+            // Skrýt všechny sekce
+            document.querySelectorAll('.page-view').forEach(view => view.classList.add('hidden'));
+            
+            // Upravit viditelnost hero headeru
+            const hero = document.getElementById('hero-header');
+            if (page === 'list') {
+                hero.classList.remove('hidden');
+            } else {
+                hero.classList.add('hidden');
+            }
+
+            // Upravit aktivní tlačítko v menu
+            const btnList = document.getElementById('nav-btn-list');
+            const btnAdd = document.getElementById('nav-btn-add');
+
+            btnList.className = "px-3 py-2 rounded-lg text-sm font-semibold transition-all " + 
+                (page === 'list' ? "bg-emerald-800 text-white" : "text-stone-300 hover:text-white hover:bg-stone-800");
+            btnAdd.className = "px-3 py-2 rounded-lg text-sm font-semibold transition-all " + 
+                (page === 'add' ? "bg-emerald-800 text-white" : "text-stone-300 hover:text-white hover:bg-stone-800");
+
+            // Zobrazit požadovanou sekci
+            if (page === 'list') {
+                document.getElementById('page-list').classList.remove('hidden');
+                applyFilters();
+            } else if (page === 'add') {
+                document.getElementById('page-add').classList.remove('hidden');
+                document.getElementById('add-deer-form').reset();
+                removePreviewPhoto();
+            } else if (page === 'detail' && deerId) {
+                selectedDeerId = deerId;
+                renderDetailPage(deerId);
+                document.getElementById('page-detail').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // --- 4. ZOBRAZENÍ SEZNAMU (KARTY) ---
+        function createDeerCard(deer) {
+            let statusColor = "bg-stone-100 text-stone-700 border border-stone-200";
+            if (deer.status.includes("LC")) statusColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+            if (deer.status.includes("VU") || deer.status.includes("NT")) statusColor = "bg-amber-50 text-amber-700 border border-amber-200";
+            if (deer.status.includes("CR") || deer.status.includes("EN")) statusColor = "bg-rose-50 text-rose-700 border border-rose-200";
+
+            const fallbackImage = 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800';
+            const imgUrl = deer.obrazek || fallbackImage;
+
+            return `
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-stone-200/80 flex flex-col h-full group">
+                    <div onclick="navigateTo('detail', '${deer.id}')" class="relative h-52 overflow-hidden bg-stone-100 cursor-pointer">
+                        <img src="${imgUrl}" alt="${deer.jmeno}" onerror="this.src='${fallbackImage}'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <span class="absolute top-3 left-3 bg-stone-900/75 text-white backdrop-blur-sm text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg">
+                            ${deer.podceled}
+                        </span>
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <span class="${statusColor} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                                ${deer.status}
+                            </span>
+                            <h3 onclick="navigateTo('detail', '${deer.id}')" class="text-lg font-bold text-stone-900 mt-2 hover:text-emerald-800 transition-colors cursor-pointer serif-font">
+                                ${deer.jmeno}
+                            </h3>
+                            <p class="text-xs text-stone-400 italic mb-3">${deer.latinsky}</p>
+                            <p class="text-stone-600 text-xs leading-relaxed line-clamp-3 mb-4">${deer.popis}</p>
+                        </div>
+                        
+                        <div class="border-t border-stone-100 pt-4 flex justify-between items-center text-xs text-stone-500">
+                            <div>
+                                Váha: <strong class="text-stone-700 font-bold">${deer.hmotnost_max} kg</strong>
+                            </div>
+                            <button onclick="navigateTo('detail', '${deer.id}')" class="text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1 group/btn">
+                                Více informací
+                                <svg class="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const subfamilyVal = document.getElementById('subfamily-filter').value;
+            const sortVal = document.getElementById('sort-select').value;
+
+            let filtered = activeDeerData.filter(deer => {
+                const matchesSearch = deer.jmeno.toLowerCase().includes(searchVal) || 
+                                      deer.latinsky.toLowerCase().includes(searchVal) ||
+                                      deer.vyskyt.toLowerCase().includes(searchVal);
+                const matchesSubfamily = (subfamilyVal === 'all') || (deer.podceled === subfamilyVal);
+                return matchesSearch && matchesSubfamily;
+            });
+
+            if (sortVal === 'name-asc') {
+                filtered.sort((a, b) => a.jmeno.localeCompare(b.jmeno, 'cs'));
+            } else if (sortVal === 'name-desc') {
+                filtered.sort((a, b) => b.jmeno.localeCompare(a.jmeno, 'cs'));
+            } else if (sortVal === 'weight-desc') {
+                filtered.sort((a, b) => b.hmotnost_max - a.hmotnost_max);
+            } else if (sortVal === 'weight-asc') {
+                filtered.sort((a, b) => (a.hmotnost_min || 0) - (b.hmotnost_min || 0));
+            }
+
+            const grid = document.getElementById('deer-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map(deer => createDeerCard(deer)).join('');
+            }
+
+            document.getElementById('counter-visible').innerText = filtered.length;
+            document.getElementById('counter-total').innerText = activeDeerData.length;
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = "";
+            document.getElementById('subfamily-filter').value = "all";
+            document.getElementById('sort-select').value = "default";
+            applyFilters();
+            showToast("Filtry byly vynulovány", "success");
+        }
+
+        // --- 5. DETAIL PODSTRÁNKA (Vizualizace a správa obrázků) ---
+        function renderDetailPage(id) {
+            const deer = activeDeerData.find(d => d.id === id);
+            if (!deer) {
+                showToast("Jelen nebyl nalezen!", "error");
+                navigateTo('list');
+                return;
+            }
+
+            const fallbackImage = 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=1000';
+            
+            document.getElementById('detail-id').innerText = deer.id;
+            document.getElementById('detail-name').innerText = deer.jmeno;
+            document.getElementById('detail-latin').innerText = deer.latinsky;
+            document.getElementById('detail-subfamily').innerText = deer.podceled;
+            document.getElementById('detail-image').src = deer.obrazek || fallbackImage;
+            document.getElementById('detail-image').onerror = function() { this.src = fallbackImage; };
+            
+            document.getElementById('detail-weight').innerText = `${deer.hmotnost_min || '?'} - ${deer.hmotnost_max} kg`;
+            document.getElementById('detail-height').innerText = deer.vyska_kohoutek ? `${deer.vyska_kohoutek} cm` : 'Neznámá';
+            
+            // Status ohrožení barvy
+            const statusEl = document.getElementById('detail-status');
+            statusEl.innerText = deer.status;
+            statusEl.className = "inline-block text-xs font-bold px-3 py-1.5 rounded-lg mt-1";
+            if (deer.status.includes("LC")) {
+                statusEl.classList.add("bg-emerald-100", "text-emerald-800");
+            } else if (deer.status.includes("VU") || deer.status.includes("NT")) {
+                statusEl.classList.add("bg-amber-100", "text-amber-800");
+            } else {
+                statusEl.classList.add("bg-rose-100", "text-rose-800");
+            }
+
+            document.getElementById('detail-desc').innerText = deer.popis;
+            document.getElementById('detail-habitat').innerText = deer.vyskyt;
+            document.getElementById('detail-diet').innerText = deer.potrava || "Neuvedeno";
+            document.getElementById('detail-activity').innerText = deer.aktivita ? `Hlavní rytmus aktivity: ${deer.aktivita}` : "";
+        }
+
+        // Změna fotky na detailní stránce přímo z počítače
+        function changeDetailPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                
+                // Aktualizace v našem poli dat
+                const deerIndex = activeDeerData.findIndex(d => d.id === selectedDeerId);
+                if (deerIndex !== -1) {
+                    activeDeerData[deerIndex].obrazek = base64Data;
+                    
+                    // Okamžité překreslení na stránce
+                    document.getElementById('detail-image').src = base64Data;
+                    showToast("Fotografie byla úspěšně změněna!", "success");
+                    
+                    // Upozornění na uložení
+                    notifyUnsavedChanges();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- 6. PŘIDÁVÁNÍ NOVÉHO JELENA (Formulář) ---
+        function previewNewDeerPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedPhotoBase64 = e.target.result;
+                document.getElementById('add-photo-preview').src = uploadedPhotoBase64;
+                document.getElementById('add-photo-preview-container').classList.remove('hidden');
+                document.getElementById('add-photo-url').value = ""; // Vynulovat URL pokud nahráváme soubor
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function previewUrlPhoto(url) {
+            if (url.trim() !== "") {
+                uploadedPhotoBase64 = url;
+                document.getElementById('add-photo-preview').src = url;
+                document.getElementById('add-photo-preview-container').classList.remove('hidden');
+                document.getElementById('add-photo-file').value = ""; // Vynulovat soubor
+            } else {
+                removePreviewPhoto();
+            }
+        }
+
+        function removePreviewPhoto() {
+            uploadedPhotoBase64 = "";
+            document.getElementById('add-photo-preview').src = "";
+            document.getElementById('add-photo-preview-container').classList.add('hidden');
+            document.getElementById('add-photo-file').value = "";
+            document.getElementById('add-photo-url').value = "";
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const jmeno = document.getElementById('add-name').value.trim();
+            const latinsky = document.getElementById('add-latin').value.trim();
+            const podceled = document.getElementById('add-subfamily').value;
+            const status = document.getElementById('add-status').value;
+            const h_min = parseInt(document.getElementById('add-weight-min').value) || null;
+            const h_max = parseInt(document.getElementById('add-weight-max').value);
+            const vyska = parseInt(document.getElementById('add-height').value) || null;
+            const vyskyt = document.getElementById('add-habitat').value.trim();
+            const potrava = document.getElementById('add-diet').value.trim();
+            const aktivita = document.getElementById('add-activity').value.trim();
+            const popis = document.getElementById('add-desc').value.trim();
+
+            // Vytvoření unikátního ID z názvu
+            const id = jmeno.toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)+/g, "");
+
+            // Kontrola duplicity ID
+            if (activeDeerData.some(d => d.id === id)) {
+                showToast("Chyba: Jelen s tímto jménem již v databázi existuje!", "error");
+                return;
+            }
+
+            const novyJelen = {
+                id,
+                jmeno,
+                latinsky,
+                podceled,
+                "hmotnost_min": h_min,
+                "hmotnost_max": h_max,
+                "vyska_kohoutek": vyska,
+                vyskyt,
+                status,
+                popis,
+                potrava,
+                aktivita,
+                "obrazek": uploadedPhotoBase64 || "https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800"
+            };
+
+            // Uložit do naší aktivní paměti
+            activeDeerData.push(novyJelen);
+            
+            // Oznámení a přesměrování
+            showToast(`Druh '${jmeno}' byl úspěšně přidán!`, "success");
+            notifyUnsavedChanges();
+            navigateTo('list');
+        }
+
+        // Smazat jelena
+        function deleteDeer() {
+            const deer = activeDeerData.find(d => d.id === selectedDeerId);
+            if (!deer) return;
+
+            const potvrdit = confirm(`Opravdu si přeješ smazat jelena "${deer.jmeno}" z databáze?`);
+            if (potvrdit) {
+                activeDeerData = activeDeerData.filter(d => d.id !== selectedDeerId);
+                showToast("Jelen byl smazán", "success");
+                notifyUnsavedChanges();
+                navigateTo('list');
+            }
+        }
+
+        function notifyUnsavedChanges() {
+            // Změníme barvu a text status baru, aby uživatel věděl, že má stažené soubory aktualizovat
+            const statusBar = document.getElementById('status-bar');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+            statusText.innerHTML = `💾 <strong>Máš neuložené změny!</strong> Nezapomeň si v patičce nebo nahoře stáhnout nový soubor <strong>'jeleni.json'</strong>, ať o ně nepřijdeš.`;
+            statusBar.className = "bg-amber-100 border-b border-amber-200 py-2 px-4 text-xs md:text-sm text-amber-900 transition-all duration-300";
+        }
+
+
+        // --- 7. SOUBORY: EXPORT / IMPORT JSON ---
+        function downloadJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeDeerData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "jeleni.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            // Obnovit stav do zelené (uloženo)
+            const statusBar = document.getElementById('status-bar');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+            statusText.innerHTML = `✔️ <strong>Staženo!</strong> Databáze byla uložena do tvého staženého souboru 'jeleni.json'.`;
+            statusBar.className = "bg-emerald-100 border-b border-emerald-200 py-2 px-4 text-xs md:text-sm text-emerald-950 transition-all duration-300";
+
+            showToast("Soubor 'jeleni.json' úspěšně stažen", "success");
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            processFile(file);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.add('border-emerald-600', 'bg-emerald-50/20');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('border-emerald-600', 'bg-emerald-50/20');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('border-emerald-600', 'bg-emerald-50/20');
+            const file = e.dataTransfer.files[0];
+            processFile(file);
+        }
+
+        function processFile(file) {
+            if (!file) return;
+            if (file.type !== "application/json" && !file.name.endsWith('.json')) {
+                showToast("Chyba: Soubor musí být ve formátu .json!", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    
+                    if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].jmeno && parsedData[0].id) {
+                        activeDeerData = parsedData;
+                        
+                        // Aktualizovat rozhraní
+                        initUI();
+                        
+                        const statusBar = document.getElementById('status-bar');
+                        const statusDot = document.getElementById('status-dot');
+                        const statusText = document.getElementById('status-text');
+                        
+                        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                        statusText.innerHTML = `✔️ <strong>Nahráno:</strong> Používají se data z nahraného souboru '${file.name}' (${parsedData.length} jelenů).`;
+                        statusBar.className = "bg-emerald-100 border-b border-emerald-200 py-2 px-4 text-xs md:text-sm text-emerald-950 transition-all duration-300";
+                        
+                        showToast("Nový datový soubor úspěšně importován!", "success");
+                    } else {
+                        throw new Error("Neplatná struktura databáze jelenů.");
+                    }
+                } catch (err) {
+                    showToast("Nelze přečíst JSON. Zkontrolujte strukturu.", "error");
+                    console.error("Chyba při parsování:", err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- 8. NOTIFIKAČNÍ SYSTÉM (TOASTS) ---
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = message;
+
+            if (type === "success") {
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
