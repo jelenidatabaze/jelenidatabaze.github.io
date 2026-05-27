@@ -29,9 +29,16 @@
       flex-wrap:wrap;
     }
 
-    .logo{ font-size:28px; font-weight:bold; }
+    .logo{
+      font-size:28px;
+      font-weight:bold;
+    }
 
-    .right{ display:flex; align-items:center; gap:15px; }
+    .right{
+      display:flex;
+      align-items:center;
+      gap:15px;
+    }
 
     .email-box{
       background:white;
@@ -39,6 +46,11 @@
       padding:10px 15px;
       border-radius:8px;
       min-width:220px;
+    }
+
+    .email-box a{
+      color:black;
+      text-decoration:none;
     }
 
     .logo-box{
@@ -86,13 +98,23 @@
       background-image:url("https://ceskehory.goldengate.cz/wp-content/uploads/2024/04/Jelen-evropske.jpg");
     }
 
-    .left-side h2,.left-side p,.right-side h2,.right-side p{
+    .left-side h2,
+    .left-side p,
+    .right-side h2,
+    .right-side p{
       position:relative;
       z-index:1;
     }
 
-    h2{ margin-bottom:20px; font-size:32px; }
-    p{ font-size:18px; line-height:1.6; }
+    h2{
+      margin-bottom:20px;
+      font-size:32px;
+    }
+
+    p{
+      font-size:18px;
+      line-height:1.6;
+    }
 
     .bottom{
       width:100%;
@@ -120,6 +142,8 @@
       padding:20px;
       border-radius:10px;
       color:white;
+      position:relative;
+      z-index:2;
     }
 
     .form-box input, .form-box select{
@@ -132,6 +156,8 @@
 
     .list{
       margin-top:20px;
+      position:relative;
+      z-index:2;
     }
 
     .item{
@@ -142,7 +168,6 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      color:white;
     }
 
     .delete{
@@ -170,6 +195,7 @@
 </header>
 
 <section class="main">
+
   <div class="left-side">
     <h2>Bodování zvěře</h2>
     <p>Přehled trofejí a bodování.</p>
@@ -193,6 +219,7 @@
       <button class="btn" onclick="save()">Uložit</button>
     </div>
   </div>
+
 </section>
 
 <section class="bottom">
@@ -200,42 +227,43 @@
 </section>
 
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+
   let data = JSON.parse(localStorage.getItem("zver")) || [];
 
   const form = document.getElementById("formBox");
   const list = document.getElementById("list");
 
-  function openForm(){
-    form.style.display = form.style.display === "block" ? "none" : "block";
+  window.openForm = function () {
+    form.style.display = (form.style.display === "block") ? "none" : "block";
   }
 
-  function save(){
+  window.save = function () {
     const type = document.getElementById("type").value;
     const name = document.getElementById("name").value;
     const points = parseInt(document.getElementById("points").value);
 
-    if(!name || !points) return;
+    if (!name || !points) return;
 
-    data.push({type, name, points});
+    data.push({ type, name, points });
     update();
 
     document.getElementById("name").value = "";
     document.getElementById("points").value = "";
   }
 
-  function deleteItem(index){
+  window.deleteItem = function (index) {
     data.splice(index, 1);
     update();
   }
 
-  function update(){
-    data.sort((a,b)=>b.points - a.points);
-
+  function update() {
+    data.sort((a, b) => b.points - a.points);
     localStorage.setItem("zver", JSON.stringify(data));
 
     list.innerHTML = "";
 
-    data.forEach((item, index)=>{
+    data.forEach((item, index) => {
       const div = document.createElement("div");
       div.className = "item";
 
@@ -251,6 +279,7 @@
   }
 
   update();
+});
 </script>
 
 </body>
