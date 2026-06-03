@@ -1,253 +1,226 @@
 <!doctype html>
+
 <html lang="cs">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Databáze zvěře Kladcká</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Databáze zvěře Kladcká</title>
 
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-family: Arial, sans-serif;
-            }
+```
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
 
-            body {
-                background: #000;
-                color: #fff;
-            }
+    body {
+        background: linear-gradient(135deg, #0b1d13, #1f4d2e, #2d6a4f);
+        color: white;
+        min-height: 100vh;
+    }
 
-            header {
-                background: #1f4d2e;
-                padding: 20px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+    header {
+        background: rgba(31, 77, 46, 0.95);
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    }
 
-            .logo {
-                font-size: 28px;
-                font-weight: bold;
-            }
+    .logo {
+        font-size: 30px;
+        font-weight: bold;
+    }
 
-            .right {
-                display: flex;
-                gap: 15px;
-                align-items: center;
-            }
+    .right {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
 
-            .email-box {
-                background: #fff;
-                color: #000;
-                padding: 10px;
-                border-radius: 8px;
-            }
+    .email-box {
+        background: white;
+        color: black;
+        padding: 10px;
+        border-radius: 8px;
+    }
 
-            .logo-box {
-                width: 60px;
-                height: 60px;
-                background: #fff;
-                color: #1f4d2e;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 10px;
-                font-weight: bold;
-            }
+    .logo-box {
+        width: 60px;
+        height: 60px;
+        background: white;
+        color: #1f4d2e;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        font-size: 30px;
+    }
 
-            .main {
-                display: flex;
-                min-height: 60vh;
-            }
+    .main {
+        min-height: 75vh;
+    }
 
-            .left-side,
-            .right-side {
-                width: 50%;
-                padding: 40px;
-                position: relative;
-            }
+    .left-side {
+        padding: 40px;
+        position: relative;
+        min-height: 75vh;
+    }
 
-            .left-side::before,
-            .right-side::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background-size: cover;
-                background-position: center;
-                filter: brightness(0.4);
-                z-index: 0;
-            }
+    .left-side::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url("https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=1200&q=80");
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.3);
+        z-index: 0;
+    }
 
-            .left-side::before {
-                background-image: url("https://media.istockphoto.com/id/182199370/photo/young-hart-red-deer-stag.jpg");
-            }
+    .content {
+        position: relative;
+        z-index: 1;
+    }
 
-            .right-side::before {
-                background-image: url("https://ceskehory.goldengate.cz/wp-content/uploads/2024/04/Jelen-evropske.jpg");
-            }
+    h2 {
+        margin-bottom: 10px;
+        font-size: 32px;
+    }
 
-            .content {
-                position: relative;
-                z-index: 1;
-            }
+    .list {
+        margin-top: 25px;
+    }
 
-            .list {
-                margin-top: 20px;
-            }
+    .item {
+        background: rgba(31,77,46,.9);
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        transition: 0.3s;
+    }
 
-            .item {
-                background: #1f4d2e;
-                padding: 10px;
-                margin: 10px 0;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 10px;
-            }
+    .item:hover {
+        transform: translateY(-3px);
+    }
 
-            .item img {
-                width: 60px;
-                height: 60px;
-                object-fit: cover;
-                border-radius: 8px;
-            }
+    .item img {
+        width: 90px;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 10px;
+    }
 
-            .delete {
-                background: red;
-                border: none;
-                color: #fff;
-                padding: 5px 10px;
-                border-radius: 6px;
-                cursor: pointer;
-            }
+    .delete {
+        background: red;
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
 
-            .bottom {
-                background: #111;
-                padding: 20px;
-                text-align: center;
-            }
+    .bottom {
+        text-align: center;
+        padding: 30px;
+    }
 
-            .btn {
-                background: #1f4d2e;
-                color: #fff;
-                border: none;
-                padding: 15px 30px;
-                border-radius: 10px;
-                cursor: pointer;
-                margin-top: 10px;
-            }
+    .bottom a {
+        display: inline-block;
+        background: #1f4d2e;
+        color: white;
+        text-decoration: none;
+        padding: 15px 35px;
+        border-radius: 12px;
+        font-size: 22px;
+        font-weight: bold;
+    }
 
-            .form {
-                display: none;
-                background: #222;
-                padding: 15px;
-                border-radius: 10px;
-                margin-top: 15px;
-            }
+    .bottom a:hover {
+        background: #2d6a4f;
+    }
+</style>
+```
 
-            input,
-            select {
-                width: 100%;
-                padding: 10px;
-                margin: 5px 0;
-                border-radius: 8px;
-                border: none;
-            }
-        </style>
-    </head>
+</head>
 
-    <body>
-        <header>
-            <div class="logo">Databáze zvěře Kladcká</div>
+<body>
 
-            <div class="right">
-                <div class="email-box">jirkaolko@gmail.com</div>
-                <div class="logo-box">LOGO</div>
-            </div>
-        </header>
+<header>
+    <div class="logo">Databáze zvěře Kladcká</div>
 
-        <section class="main">
-            <div class="left-side">
-                <div class="content">
-                    <h2>Databáze zvěře</h2>
-                    <p>Evidence trofejí a bodování</p>
+```
+<div class="right">
+    <div class="email-box">jirkaolko@gmail.com</div>
+    <div class="logo-box">🦌</div>
+</div>
+```
 
-                    <div class="list" id="list"></div>
+</header>
+
+<section class="main">
+    <div class="left-side">
+        <div class="content">
+            <h2>Databáze zvěře</h2>
+            <p>Evidence trofejí a bodování</p>
+
+```
+        <div class="list" id="list"></div>
+    </div>
+</div>
+```
+
+</section>
+
+<div class="bottom">
+    <a href="add.html">➕ Přidat záznam</a>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    let data = JSON.parse(localStorage.getItem("zver")) || [];
+
+    const list = document.getElementById("list");
+
+    window.deleteItem = (i) => {
+        data.splice(i, 1);
+        render();
+    };
+
+    function render() {
+        data.sort((a, b) => b.points - a.points);
+
+        localStorage.setItem("zver", JSON.stringify(data));
+
+        list.innerHTML = "";
+
+        data.forEach((x, i) => {
+            list.innerHTML += `
+                <div class="item">
+                    ${x.image ? `<img src="${x.image}" alt="">` : ""}
+
+                    <div>
+                        <b>${x.type}</b><br>
+                        ${x.name}<br>
+                        ${x.points} bodů
+                    </div>
+
+                    <button class="delete" onclick="deleteItem(${i})">X</button>
                 </div>
-            </div>
-        </section>
+            `;
+        });
+    }
 
-        <div class="bottom">
-            <a href="add.html"><font size="+2">Přidat</font></a>
-        </div>
+    render();
+});
+</script>
 
-        <script>
-            document.addEventListener("DOMContentLoaded", () => {
-                let data = JSON.parse(localStorage.getItem("zver")) || [];
-
-                const list = document.getElementById("list");
-                const form = document.getElementById("form");
-                const addBtn = document.getElementById("addBtn");
-                const saveBtn = document.getElementById("saveBtn");
-
-                // otevřít formulář
-                addBtn.addEventListener("click", () => {
-                    form.style.display =
-                        form.style.display === "block" ? "none" : "block";
-                });
-
-                // uložit
-                saveBtn.addEventListener("click", () => {
-                    const type = document.getElementById("type").value;
-                    const name = document.getElementById("name").value;
-                    const points = Number(
-                        document.getElementById("points").value,
-                    );
-                    const image = document.getElementById("image").value;
-
-                    if (!name || !points) return;
-
-                    data.push({ type, name, points, image });
-
-                    document.getElementById("name").value = "";
-                    document.getElementById("points").value = "";
-                    document.getElementById("image").value = "";
-
-                    render();
-                });
-
-                // smazání
-                window.deleteItem = (i) => {
-                    data.splice(i, 1);
-                    render();
-                };
-
-                function render() {
-                    data.sort((a, b) => b.points - a.points);
-
-                    localStorage.setItem("zver", JSON.stringify(data));
-
-                    list.innerHTML = "";
-
-                    data.forEach((x, i) => {
-                        list.innerHTML += `
-        <div class="item">
-          ${x.image ? `<img src="${x.image}">` : ""}
-
-          <div>
-            <b>${x.type}</b> – ${x.name} – ${x.points} bodů
-          </div>
-
-          <button class="delete" onclick="deleteItem(${i})">X</button>
-        </div>
-      `;
-                    });
-                }
-
-                render();
-            });
-        </script>
-    </body>
+</body>
 </html>
