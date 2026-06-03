@@ -168,19 +168,32 @@
             </div>
         </header>
 
-        <section class="main">
-            <div class="left-side">
+            <div class="right-side">
                 <div class="content">
-                    <h2>Databáze zvěře</h2>
-                    <p>Evidence trofejí a bodování</p>
+                    <h2>Přidání záznamu</h2>
 
-                    <div class="list" id="list"></div>
+                    <div class="form" id="form">
+                        <select id="type">
+                            <option>Jelen</option>
+                            <option>Srnec</option>
+                            <option>Daněk</option>
+                        </select>
+
+                        <input id="name" placeholder="Jméno / označení" />
+                        <input id="points" type="number" placeholder="Body" />
+                        <input
+                            id="image"
+                            placeholder="URL fotky (https://...)"
+                        />
+
+                        <button class="btn" id="saveBtn">Uložit</button>
+                    </div>
                 </div>
             </div>
         </section>
 
         <div class="bottom">
-            <a href="add.html"><font size="+2">Přidat</font></a>
+            <button class="btn" id="addBtn">Přidat</button>
         </div>
 
         <script>
